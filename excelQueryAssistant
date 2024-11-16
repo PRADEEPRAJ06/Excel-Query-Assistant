@@ -1,0 +1,61 @@
+import google.generativeai as genai
+import pandas as pd
+import time
+from colorama import Fore, Style, init
+
+# Initialize colorama for Windows compatibility
+init()
+
+# Configure the API key
+genai.configure(api_key="AIzaSyBL5HUj6Ae0HXNvKtn3UY-ZCcnfQNLI_Jk")
+
+# Function to load and preview Excel data
+def load_excel_data(file_path):
+    data = pd.read_excel(file_path)
+    data_context = data.to_string(index=False)
+    return data_context
+
+# Function to send a request to the model
+def send_request(chat, context, question):
+    try:
+        prompt = f"Here is the data:\n\n{context}\n\nQuestion: {question}"
+        response = chat.send_message(prompt)
+        return response
+    except Exception as e:
+        print(f"{Fore.RED}Error occurred:{Style.RESET_ALL}", e)
+        time.sleep(5)
+        return None
+
+# Main function to load data, format it, and prompt user for a query
+def ask_model_with_excel(file_path):
+    print(f"{Fore.CYAN}{'='*40}")
+    print("🔍 Welcome to the Excel Query Assistant!")
+    print(f"{'='*40}{Style.RESET_ALL}")
+
+    data_context = load_excel_data(file_path)
+
+    model = genai.GenerativeModel(model_name="gemini-1.5-pro")
+    chat = model.start_chat()
+
+    print(f"{Fore.YELLOW}\n📄 Data loaded successfully!{Style.RESET_ALL}")
+    print("You can now ask a question about the data.\n")
+
+    while True:
+        question = input(f"{Fore.GREEN}Please enter your question (or type 'exit' to quit): {Style.RESET_ALL}")
+
+        if question.lower() == 'exit':
+            print(f"{Fore.CYAN}Goodbye!{Style.RESET_ALL}")
+            break
+
+        print(f"\n{Fore.MAGENTA}⏳ Processing your question...{Style.RESET_ALL}")
+        response = send_request(chat, data_context, question)
+
+        if response:
+            answer = response.candidates[0].content.parts[0].text
+            print(f"\n{Fore.BLUE}Answer:{Style.RESET_ALL} {answer}")
+        else:
+            print(f"{Fore.RED}No response received. Please try again.{Style.RESET_ALL}")
+
+
+file_path = "/content/Employee-Management-Sample-Data.xlsx"
+ask_model_with_excel(file_path)
